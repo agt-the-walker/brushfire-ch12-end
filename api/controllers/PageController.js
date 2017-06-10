@@ -785,6 +785,11 @@ module.exports = {
         }
       });
 
+      foundTutorial.videos = _.sortBy(foundTutorial.videos,
+                                      function getRank (video) {
+        return _.indexOf(foundTutorial.videoOrder,video.id);
+      });
+
       var totalSeconds = 0;
       _.each(foundTutorial.videos, function(video){
 

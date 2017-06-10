@@ -306,7 +306,8 @@ module.exports = {
       Tutorial.create({
         title: req.param('title'),
         description: req.param('description'),
-           owner: foundUser.id,
+        owner: foundUser.id,
+        videoOrder: [],
       })
       .exec(function(err, createdTutorial){
         if (err) return res.negotiate(err);
@@ -370,6 +371,11 @@ module.exports = {
           req.param('minutes') * 60 + req.param('seconds')
       }).exec(function (err, createdVideo) {
         if (err) return res.negotiate(err);
+
+        foundTutorial.videoOrder.push(createdVideo.id);
+        foundTutorial.save(function (err){
+          if (err) return res.negotiate(err);
+        });
 
         return res.ok();
       });

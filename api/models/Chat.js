@@ -9,6 +9,15 @@ module.exports = {
 
   attributes: {
 
+    message: {
+      type: 'string'
+    },
+    sender: {
+      model: 'user'
+    },
+    video: {
+      model: 'video'
+    }
   }
 };
 

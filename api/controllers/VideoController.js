@@ -108,6 +108,36 @@ module.exports = {
     });
 
     return res.ok();
+  },
+
+  typing: function(req, res) {
+    if (!req.isSocket) {
+      return res.badRequest();
+    }
+
+    User.findOne({
+      id: req.session.userId
+    }).exec(function (err, foundUser){
+      if (err) return res.negotiate(err);
+      if (!foundUser) return res.notFound();
+
+      sails.sockets.broadcast('video'+req.param('id'), 'typing', {
+        username: foundUser.username
+      }, (req.isSocket ? req : undefined) );
+
+      return res.ok();
+    });
+  },
+
+  stoppedTyping: function(req, res) {
+    if (!req.isSocket) {
+      return res.badRequest();
+    }
+
+    sails.sockets.broadcast('video'+req.param('id'),
+      'stoppedTyping', (req.isSocket ? req : undefined) );
+
+    return res.ok();
   }
 };
 

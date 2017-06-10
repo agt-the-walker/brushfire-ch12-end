@@ -34,7 +34,9 @@ module.exports.routes = {
   'PUT /tutorials/:id': 'TutorialController.updateTutorial',
   'PUT /tutorials/:id/rate': 'TutorialController.rateTutorial',
 
-  'GET /videos/:id/join': 'VideoController.joinChat',
+  'PUT /videos/:id/join': 'VideoController.joinChat',
+  'PUT /videos/:id/typing': 'VideoController.typing',
+  'PUT /videos/:id/stoppedTyping': 'VideoController.stoppedTyping',
   'POST /videos/:id/chat': 'VideoController.chat',
 
   'DELETE /tutorials/:id': 'TutorialController.deleteTutorial',
@@ -47,7 +49,7 @@ module.exports.routes = {
   /*************************************************************
   * Server Rendered HTML Page Endpoints                        *
   *************************************************************/
-  
+
   'GET /profile/followers': 'PageController.profileFollower',
 
   'GET /': 'PageController.home',
@@ -58,9 +60,9 @@ module.exports.routes = {
   'GET /administration': 'PageController.administration',
 
   'GET /password-recovery-email': 'PageController.passwordRecoveryEmail',
-  'GET /password-recovery-email-sent': 'PageController.passwordRecoveryEmailSent',  
+  'GET /password-recovery-email-sent': 'PageController.passwordRecoveryEmailSent',
   'GET /password-reset-form/:passwordRecoveryToken': 'PageController.passwordReset',
-  
+
   'GET /tutorials/search': 'TutorialController.searchTutorials',
   'GET /tutorials/browse': 'PageController.showBrowsePage',
   'GET /tutorials/new': 'PageController.newTutorial',

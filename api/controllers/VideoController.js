@@ -100,7 +100,7 @@ module.exports = {
         if (err) return res.negotiate(err);
         if (!foundUser) return res.notFound();
 
-        sails.sockets.broadcast('video'+req.param('id'), 'chat', {
+        Video.publishUpdate(+req.param('id'), {
           message: req.param('message'),
           username: foundUser.username,
           created: 'just now',

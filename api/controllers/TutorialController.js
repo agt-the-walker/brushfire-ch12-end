@@ -202,17 +202,90 @@ module.exports = {
 
   rateTutorial: function(req, res) {
 
-    return res.ok();
+    User.findOne({
+      id: req.session.userId
+    })
+    .exec(function(err, currentUser){
+      if (err) return res.negotiate(err);
+      if (!currentUser) return res.notFound();
+
+      Tutorial.findOne({
+        id: +req.param('id')
+      })
+      .populate('owner')
+      .exec(function(err, foundTutorial){
+        if (err) return res.negotiate(err);
+        if (!foundTutorial) return res.notFound();
+        if (currentUser.id === foundTutorial.owner.id) {
+          return res.forbidden();
+        }
+
+        Rating.findOne({
+          byUser: currentUser.id,
+          byTutorial: foundTutorial.id
+        }).exec(function(err, foundRating){
+          if (err) return res.negotiate(err);
+
+          if (foundRating) {
+            Rating.update({
+              id: foundRating.id
+            }, {
+              stars: req.param('stars')
+            }).exec(function(err, updatedRating){
+              if (err) return res.negotiate(err);
+              if (!updatedRating) return res.notFound();
+
+              Tutorial.findOne({
+                id: req.param('id')
+              })
+              .populate('ratings')
+              .exec(function(err, foundTutorialAfterUpdate){
+                if (err) return res.negotiate(err);
+                if (!foundTutorialAfterUpdate) return res.notFound();
+
+                return res.json({
+                  averageRating: MathService.calculateAverage({ratings:
+                    foundTutorialAfterUpdate.ratings})
+                });
+              });
+            });
+          } else {
+            Rating.create({
+              stars: req.param('stars'),
+              byUser: currentUser.id,
+              byTutorial: foundTutorial.id
+            }).exec(function(err, createdRating){
+              if (err) return res.negotiate(err);
+              if (!createdRating) return res.notFound();
+
+              Tutorial.findOne({
+                id: req.param('id')
+              })
+              .populate('ratings')
+              .exec(function(err, foundTutorialAfterUpdate){
+                if (err) return res.negotiate(err);
+                if (!foundTutorialAfterUpdate) return res.notFound();
+
+                return res.json({
+                  averageRating: MathService.calculateAverage({ratings:
+                    foundTutorialAfterUpdate.ratings})
+                });
+              });
+            });
+          }
+        });
+      });
+    });
   },
 
   createTutorial: function(req, res) {
 
     /*
-     __   __    _ _    _      _   _          
-     \ \ / /_ _| (_)__| |__ _| |_(_)___ _ _  
-      \ V / _` | | / _` / _` |  _| / _ \ ' \ 
+     __   __    _ _    _      _   _
+     \ \ / /_ _| (_)__| |__ _| |_(_)___ _ _
+      \ V / _` | | / _` / _` |  _| / _ \ ' \
        \_/\__,_|_|_\__,_\__,_|\__|_\___/_||_|
-                                         
+
     */
 
     if (!_.isString(req.param('title'))) {
@@ -254,7 +327,7 @@ module.exports = {
       return res.badRequest();
     }
 
-    // Update the tutorial coercing the incoming id from a string to an integer using the unary `+` 
+    // Update the tutorial coercing the incoming id from a string to an integer using the unary `+`
     Tutorial.update({
       id: +req.param('id')
     }, {
@@ -279,7 +352,7 @@ module.exports = {
   },
 
   deleteTutorial: function(req, res) {
-   
+
     if (!req.session.userId) {
       return res.redirect('/');
     }
@@ -295,7 +368,7 @@ module.exports = {
 
       // Return the username of the user using the userId of the session.
       return res.json({username: foundUser.username});
-      
+
     });
   },
 

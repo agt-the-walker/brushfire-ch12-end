@@ -780,13 +780,8 @@ module.exports = {
         if (foundTutorial.ratings.length === 0) {
           foundTutorial.averageRating = null;
         } else {
-          var sumfoundTutorialRatings = 0;
-
-          _.each(foundTutorial.ratings, function(rating){
-            sumfoundTutorialRatings = sumfoundTutorialRatings + rating.stars;
-          });
-
-          foundTutorial.averageRating = sumfoundTutorialRatings / foundTutorial.ratings.length;
+          foundTutorial.averageRating =
+            MathService.calculateAverage({ratings: foundTutorial.ratings});
         }
       });
 

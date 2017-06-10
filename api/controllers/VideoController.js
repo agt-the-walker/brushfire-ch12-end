@@ -81,6 +81,8 @@ module.exports = {
 
     sails.sockets.join(req, 'video'+req.param('id'));
 
+    Video.subscribe(req, req.param('id'));
+
     return res.ok();
   },
 

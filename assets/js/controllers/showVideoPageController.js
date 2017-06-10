@@ -48,7 +48,7 @@ angular.module('brushfire').controller('showVideoPageController', ['$scope', '$h
   });
 
   // Handle socket events that are fired when a new chat event is sent (.broadcast)
-  io.socket.on('chat', function (e) {
+  io.socket.on('video', function (e) {
     console.log('new chat received!', e);
 
     // Append the chat we just received

@@ -2,15 +2,15 @@ angular.module('brushfire').controller('showVideoPageController', ['$scope', '$h
 
 
 /*
-   ____          _____                _           
-  / __ \        |  __ \              | |          
- | |  | |_ __   | |__) |___ _ __   __| | ___ _ __ 
+   ____          _____                _
+  / __ \        |  __ \              | |
+ | |  | |_ __   | |__) |___ _ __   __| | ___ _ __
  | |  | | '_ \  |  _  // _ \ '_ \ / _` |/ _ \ '__|
- | |__| | | | | | | \ \  __/ | | | (_| |  __/ |   
-  \____/|_| |_| |_|  \_\___|_| |_|\__,_|\___|_|   
-                                                                                                    
+ | |__| | | | | | | \ \  __/ | | | (_| |  __/ |
+  \____/|_| |_| |_|  \_\___|_| |_|\__,_|\___|_|
+
 */
- 
+
   // set-up loading state
   $scope.showVideo = {
     loading: false
@@ -39,7 +39,7 @@ angular.module('brushfire').controller('showVideoPageController', ['$scope', '$h
     // If the server gave us its blessing and indicated that we were
     // able to successfully join the room, then we'll set that on the
     // scope to allow the user to start sending chats.
-    // 
+    //
     // Note that, at this point, we'll also be able to start _receiving_ chats.
     $scope.hasJoinedRoom = true;
     // Because io.socket.get() is not an angular thing, we have to call $scope.$apply()
@@ -51,7 +51,7 @@ angular.module('brushfire').controller('showVideoPageController', ['$scope', '$h
   io.socket.on('chat', function (e) {
     console.log('new chat received!', e);
 
-    // Append the chat we just received    
+    // Append the chat we just received
     $scope.chats.push({
       created: e.created,
       username: e.username,
@@ -64,10 +64,26 @@ angular.module('brushfire').controller('showVideoPageController', ['$scope', '$h
     $scope.$apply();
   });
 
-/* 
-  _____   ____  __  __   ______               _       
- |  __ \ / __ \|  \/  | |  ____|             | |      
- | |  | | |  | | \  / | | |____   _____ _ __ | |_ ___ 
+  io.socket.on('typing', function (e) {
+    console.log('typing!', e);
+
+    $scope.usernameTyping = e.username;
+    $scope.typing = true;
+
+    $scope.$apply();
+  });
+
+  io.socket.on('stoppedTyping', function (e) {
+    console.log('stoppedTyping!', e);
+
+    $scope.typing = false;
+    $scope.$apply();
+  });
+
+/*
+  _____   ____  __  __   ______               _
+ |  __ \ / __ \|  \/  | |  ____|             | |
+ | |  | | |  | | \  / | | |____   _____ _ __ | |_ ___
  | |  | | |  | | |\/| | |  __\ \ / / _ \ '_ \| __/ __|
  | |__| | |__| | |  | | | |___\ V /  __/ | | | |_\__ \
  |_____/ \____/|_|  |_| |______\_/ \___|_| |_|\__|___/
@@ -95,4 +111,32 @@ angular.module('brushfire').controller('showVideoPageController', ['$scope', '$h
       $scope.$apply();
     });
   };//</sendMessage>
+
+  $scope.whenTyping = function (event) {
+
+    io.socket.request({
+      url: '/videos/'+$scope.fromUrlVideoId+'/typing',
+      method: 'put'
+    }, function (data, JWR){
+      // If something went wrong, handle the error.
+      if (JWR.statusCode !== 200) {
+        console.error(JWR);
+        return;
+      }
+    });
+  };
+
+  $scope.whenNotTyping = function (event) {
+
+    io.socket.request({
+      url: '/videos/'+$scope.fromUrlVideoId+'/stoppedTyping',
+      method: 'put'
+    }, function (data, JWR){
+      // If something went wrong, handle the error.
+      if (JWR.statusCode !== 200) {
+        console.error(JWR);
+        return;
+      }
+    });
+  };
 }]);

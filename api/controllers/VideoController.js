@@ -85,9 +85,29 @@ module.exports = {
   },
 
   chat: function(req, res) {
-    return res.json({
-      message: req.param('message')
+    Chat.create({
+      message: req.param('message'),
+      sender: req.session.userId,
+      video: +req.param('id')
+    }).exec(function (err, createdChat){
+      if (err) return res.negotiate(err);
+
+      User.findOne({
+        id: req.session.userId
+      }).exec(function (err, foundUser){
+        if (err) return res.negotiate(err);
+        if (!foundUser) return res.notFound();
+
+        sails.sockets.broadcast('video'+req.param('id'), 'chat', {
+          message: req.param('message'),
+          username: foundUser.username,
+          created: 'just now',
+          gravatarURL: foundUser.gravatarURL
+        });
+      });
     });
+
+    return res.ok();
   }
 };
 

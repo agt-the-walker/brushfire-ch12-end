@@ -785,6 +785,19 @@ module.exports = {
         }
       });
 
+      var totalSeconds = 0;
+      _.each(foundTutorial.videos, function(video){
+
+        totalSeconds = totalSeconds + video.lengthInSeconds;
+
+        video.totalTime = DatetimeService.getHoursMinutesSeconds({totalSeconds:
+          video.lengthInSeconds}).hoursMinutesSeconds;
+
+        foundTutorial.totalTime =
+          DatetimeService.getHoursMinutesSeconds({totalSeconds:
+            totalSeconds}).hoursMinutesSeconds;
+      });
+
       foundTutorial.owner = foundTutorial.owner.username;
 
       foundTutorial.created = DatetimeService.getTimeAgo({date: foundTutorial.createdAt});
@@ -911,44 +924,64 @@ module.exports = {
 
   newVideo: function(req, res) {
 
-    var tutorial = {
-      title: 'The best of Douglas Crockford on JavaScript.',
-      description: 'Understanding JavaScript the good parts, and more.',
-      owner: 'sailsinaction',
-      id: 1,
-      created: 'a month ago',
-      totalTime: '3h 22m 23s',
-      stars: 3
-    };
+    Tutorial.findOne({
+      id: +req.param('id')
+    })
+    .populate('owner')
+    .populate('ratings')
+    .populate('videos')
+    .exec(function (err, foundTutorial){
+      if (err) return res.negotiate(err);
+      if (!foundTutorial) return res.notFound();
 
-    User.findOne(req.session.userId, function(err, user) {
-      if (err) {
-        return res.negotiate(err);
-      }
-
-      if (!user) {
-        sails.log.verbose('Session refers to a user who no longer exists- did you delete a user, then try to refresh the page with an open tab logged-in as that user?');
-        return res.redirect('/');
-      }
-
-      return res.view('tutorials-detail-video-new', {
-        me: {
-          username: user.username,
-          gravatarURL: user.gravatarURL,
-          admin: user.admin
-        },
-        // We don't need all of the tutorial attributes on window.SAILS_LOCALS.tutorial
-        // so we're passing stars separately.
-        stars: tutorial.stars,
-        tutorial: {
-          id: tutorial.id,
-          title: tutorial.title,
-          description: tutorial.description,
-          owner: tutorial.owner,
-          created: tutorial.created,
-          totalTime: tutorial.totalTime,
-          stars: tutorial.stars
+      User.findOne(req.session.userId, function(err, user) {
+        if (err) {
+          return res.negotiate(err);
         }
+
+        if (!user) {
+          sails.log.verbose('Session refers to a user who no longer exists- did you delete a user, then try to refresh the page with an open tab logged-in as that user?');
+          return res.redirect('/');
+        }
+
+        if (user.username !== foundTutorial.owner.username) {
+          return res.redirect('/tutorials/'+foundTutorial.id);
+        }
+
+        foundTutorial.created = DatetimeService.getTimeAgo({date: foundTutorial.createdAt});
+        if (foundTutorial.ratings.length === 0) {
+          foundTutorial.averageRating = null;
+        } else {
+          foundTutorial.stars = MathService.calculateAverage({ratings:
+            foundTutorial.ratings});
+        }
+
+        var totalSeconds = 0;
+        _.each(foundTutorial.videos, function(video){
+
+          totalSeconds = totalSeconds + video.lengthInSeconds;
+
+          foundTutorial.totalTime =
+            DatetimeService.getHoursMinutesSeconds({totalSeconds:
+              totalSeconds}).hoursMinutesSeconds;
+        });
+
+        return res.view('tutorials-detail-video-new', {
+          me: {
+            username: user.username,
+            gravatarURL: user.gravatarURL,
+            admin: user.admin
+          },
+          tutorial: {
+            id: foundTutorial.id,
+            title: foundTutorial.title,
+            description: foundTutorial.description,
+            owner: foundTutorial.owner.username,
+            created: foundTutorial.created,
+            totalTime: foundTutorial.totalTime,
+            stars: foundTutorial.stars
+          }
+        });
       });
     });
   },

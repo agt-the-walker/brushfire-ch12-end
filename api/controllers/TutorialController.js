@@ -434,10 +434,6 @@ module.exports = {
 
   deleteTutorial: function(req, res) {
 
-    if (!req.session.userId) {
-      return res.redirect('/');
-    }
-
     User.findOne({id: req.session.userId}).exec(function(err, foundUser){
       if (err) {
         return res.negotiate(err);
@@ -447,9 +443,40 @@ module.exports = {
         return res.notFound();
       }
 
-      // Return the username of the user using the userId of the session.
-      return res.json({username: foundUser.username});
+      Tutorial.findOne({
+        id: +req.param('id')
+      })
+      .populate('owner')
+      .populate('ratings')
+      .populate('videos')
+      .exec(function(err, foundTutorial){
+        if (err) return res.negotiate(err);
+        if (!foundTutorial) return res.notFound();
 
+        if (foundUser.id != foundTutorial.owner.id) {
+          return res.forbidden();
+        }
+
+        Tutorial.destroy({
+          id: req.param('id')
+        }).exec(function(err){
+          if (err) return res.negotiate(err);
+
+          Video.destroy({
+            id: _.pluck(foundTutorial.videos, 'id')
+          }).exec(function (err){
+            if (err) return res.negotiate(err);
+
+            Rating.destroy({
+              id: _.pluck(foundTutorial.ratings, 'id')
+            }).exec(function (err){
+              if (err) return res.negotiate(err);
+
+              return res.json({username: foundUser.username});
+            });
+          });
+        });
+      });
     });
   },
 

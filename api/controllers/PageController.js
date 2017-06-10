@@ -756,9 +756,39 @@ module.exports = {
     })
     .populate('owner')
     .populate('videos')
+    .populate('ratings')
     .exec(function(err, foundTutorial){
       if (err) return res.negotiate(err);
       if (!foundTutorial) return res.notFound();
+
+      Rating.find({
+        byUser: req.session.userId
+      }).exec(function(err, foundRating){
+        if (err) return res.negotiate(err);
+
+        if (foundRating.length === 0) {
+          foundTutorial.myRating = null;
+        } else {
+          _.each(foundRating, function(rating){
+            if (foundTutorial.id === rating.byTutorial) {
+              foundTutorial.myRating = rating.stars;
+              return;
+            }
+          });
+        }
+
+        if (foundTutorial.ratings.length === 0) {
+          foundTutorial.averageRating = null;
+        } else {
+          var sumfoundTutorialRatings = 0;
+
+          _.each(foundTutorial.ratings, function(rating){
+            sumfoundTutorialRatings = sumfoundTutorialRatings + rating.stars;
+          });
+
+          foundTutorial.averageRating = sumfoundTutorialRatings / foundTutorial.ratings.length;
+        }
+      });
 
       foundTutorial.owner = foundTutorial.owner.username;
 

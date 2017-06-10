@@ -75,6 +75,12 @@ module.exports = {
   },
 
   joinChat: function(req, res) {
+    if (!req.isSocket) {
+      return res.badRequest();
+    }
+
+    sails.sockets.join(req, 'video'+req.param('id'));
+
     return res.ok();
   },
 

@@ -865,56 +865,29 @@ module.exports = {
 
   showVideo: function(req, res) {
 
-    FAKE_CHAT = [{
-      username: 'sailsinaction',
-      message: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur bibendum ornare.',
-      created: '2 minutes ago',
-      gravatarURL: 'http://www.gravatar.com/avatar/ef3eac6c71fdf24b13db12d8ff8d1264'
-    }, {
-      username: 'nikolatesla',
-      message: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur bibendum ornare.',
-      created: '2 minutes ago',
-      gravatarURL: 'http://www.gravatar.com/avatar/c06112bbecd8a290a00441bf181a24d3?'
-    }, {
-      username: 'sailsinaction',
-      message: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur bibendum ornare.',
-      created: '2 minutes ago',
-      gravatarURL: 'http://www.gravatar.com/avatar/ef3eac6c71fdf24b13db12d8ff8d1264'
-    }, {
-      username: 'nikolatesla',
-      message: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur bibendum ornare.',
-      created: '2 minutes ago',
-      gravatarURL: 'http://www.gravatar.com/avatar/c06112bbecd8a290a00441bf181a24d3?'
-    }, {
-      username: 'sailsinaction',
-      message: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur bibendum ornare.',
-      created: '2 minutes ago',
-      gravatarURL: 'http://www.gravatar.com/avatar/ef3eac6c71fdf24b13db12d8ff8d1264'
-    }, {
-      username: 'nikolatesla',
-      message: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur bibendum ornare.',
-      created: '2 minutes ago',
-      gravatarURL: 'http://www.gravatar.com/avatar/c06112bbecd8a290a00441bf181a24d3?'
-    }, {
-      username: 'sailsinaction',
-      message: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur bibendum ornare.',
-      created: '2 minutes ago',
-      gravatarURL: 'http://www.gravatar.com/avatar/ef3eac6c71fdf24b13db12d8ff8d1264'
-    }, {
-      username: 'nikolatesla',
-      message: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur bibendum ornare.',
-      created: '2 minutes ago',
-      gravatarURL: 'http://www.gravatar.com/avatar/c06112bbecd8a290a00441bf181a24d3?'
-    }, {
-      username: 'sailsinaction',
-      message: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur bibendum ornare.',
-      created: '2 minutes ago',
-      gravatarURL: 'http://www.gravatar.com/avatar/ef3eac6c71fdf24b13db12d8ff8d1264'
-    }];
-
     Video.findOne({
       id: +req.param('id')
-    }).exec(function (err, foundVideo){
+    })
+    .populate('chats')
+    .exec(function (err, foundVideo){
+      if (err) return res.negotiate(err);
+      if (!foundVideo) return res.notFound();
+
+      async.each(foundVideo.chats, function(chat, next){
+
+        User.findOne({
+          id: chat.sender
+        }).exec(function (err, foundUser){
+          if (err) return next(err);
+
+          chat.username = foundUser.username;
+          chat.created = DatetimeService.getTimeAgo({date: chat.createdAt});
+          chat.gravatarURL = foundUser.gravatarURL;
+          return next();
+        });
+      }, function(err) {
+        if (err) return res.negotiate(err);
+      });
 
       // If not logged in
       if (!req.session.userId) {
@@ -922,6 +895,7 @@ module.exports = {
           me: null,
           video: foundVideo,
           tutorialId: req.param('tutorialId'),
+          chats: foundVideo.chats
         });
       }
 
@@ -935,6 +909,12 @@ module.exports = {
 
         if (!foundUser) {
           sails.log.verbose('Session refers to a user who no longer exists');
+          return res.view('show-video', {
+            me: null,
+            video: foundVideo,
+            tutorialId: req.param('tutorialId'),
+            chats: foundVideo.chats
+          });
         }
 
         return res.view('show-video', {
@@ -945,6 +925,7 @@ module.exports = {
           },
           video: foundVideo,
           tutorialId: req.param('tutorialId'),
+          chats: foundVideo.chats
         });
       });
     });
